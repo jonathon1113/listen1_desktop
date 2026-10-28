@@ -1,11 +1,13 @@
 {
   "name": "listen1",
-  "version": "2.33.0",
+  "version": "2.33.0-1.Jonathon",
   "description": "One for all free music in China",
   "main": "app/main.js",
   "scripts": {
     "postinstall": "electron-builder install-app-deps",
     "start": "electron ./app --enable-logging",
+    "test": "node test/player_thread.test.js",
+    "test:e2e": "node test/e2e/playback_continuation.e2e.js",
     "dev": "NODE_ENV='development' npm run start",
     "dist:mac": "CSC_IDENTITY_AUTO_DISCOVERY=false DEBUG=electron-builder electron-builder --mac",
     "dist": "electron-builder .",
