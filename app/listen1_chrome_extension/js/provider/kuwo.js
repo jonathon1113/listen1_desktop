@@ -46,6 +46,74 @@ function h(t, e) {
   return (f += d);
 }
 
+// 桌面端（Electron）下浏览器 XHR 无法携带 Cookie 头（Cookie 属于 forbidden header），
+// 且应用页面以 file:// 加载，Chromium 会把酷我判定为第三方站点，
+// 既不会自动附加酷我下发的 csrf cookie，XHR 也读不到 Set-Cookie 响应头，
+// 导致全新安装的机器永远拿不到 token，酷我接口一律返回 "The request is illegal!"。
+// 因此 Electron 下改用 Node 的 http/https 发起请求，保证 Cookie / Secret 头真实发出；
+// Chrome 扩展环境权限不同，仍然沿用 axios。
+function kwNodeGet(url, headers) {
+  const http = require('http'); // eslint-disable-line
+  const https = require('https'); // eslint-disable-line
+  return new Promise((resolve, reject) => {
+    const agent = url.startsWith('http://') ? http : https;
+    const req = agent.get(
+      url,
+      {
+        headers,
+        timeout: 20000,
+      },
+      (res) => {
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+          body += chunk;
+        });
+        res.on('end', () => {
+          let data = body;
+          try {
+            data = JSON.parse(body);
+          } catch (e) {
+            // 非 JSON 响应保持字符串原文
+          }
+          resolve({ status: res.statusCode, data, headers: res.headers, body });
+        });
+      }
+    );
+    req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy(new Error('酷我接口请求超时'));
+    });
+  });
+}
+
+// 安全探测运行环境：单元测试等非浏览器环境没有 isElectron 全局。
+function kwIsElectron() {
+  try {
+    return typeof isElectron === 'function' && !!isElectron();
+  } catch (e) {
+    return false;
+  }
+}
+
+// 统一的酷我请求入口：Electron 走 Node，浏览器扩展走 axios。
+function kwRequest(url, headers) {
+  if (kwIsElectron()) {
+    return kwNodeGet(
+      url,
+      Object.assign(
+        {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          Accept: 'application/json, text/plain, */*',
+        },
+        headers || {}
+      )
+    );
+  }
+  return axios.get(url, { headers });
+}
+
 class kuwo {
   static forgeMD5(message) {
     const md = forge.md.sha1.create();
@@ -297,19 +365,29 @@ class kuwo {
     if (this.kw_token_promise) {
       return this.kw_token_promise;
     }
-    const promise = axios
-      .get('https://www.kuwo.cn/', { withCredentials: true })
-      .then((response) => {
-        const setCookie = response.headers['set-cookie'] || '';
+    const promise = (async () => {
+      let value = null;
+      try {
+        // Electron 下用 Node 请求，可以直接读到 Set-Cookie 响应头。
+        const response = kwIsElectron()
+          ? await kwNodeGet('https://www.kuwo.cn/', {})
+          : await axios.get('https://www.kuwo.cn/', { withCredentials: true });
+        const setCookie =
+          (response.headers &&
+            (response.headers['set-cookie'] || response.headers['Set-Cookie'])) ||
+          '';
         const raw = Array.isArray(setCookie)
           ? setCookie.join(';')
           : String(setCookie);
         const matched = raw.match(new RegExp(`${name}=([^;]+)`));
-        if (!matched) {
-          return null;
+        if (matched) {
+          value = matched[1];
         }
-        const value = matched[1];
-        return new Promise((resolve) => {
+      } catch (e) {
+        // 访问首页失败时，继续尝试从 cookie 中回读
+      }
+      if (value) {
+        await new Promise((resolve) => {
           cookieSet(
             {
               url: 'https://www.kuwo.cn/',
@@ -320,10 +398,19 @@ class kuwo {
               secure: true,
               expirationDate: Math.floor(Date.now() / 1000) + 7 * 24 * 3600,
             },
-            () => resolve(value)
+            () => resolve()
           );
         });
-      })
+        return value;
+      }
+      // 浏览器已把 Set-Cookie 存入 cookie jar 时，直接回读即可。
+      return new Promise((resolve) => {
+        cookieGet({ url: 'https://www.kuwo.cn', name }, (cookie) => {
+          resolve(cookie && cookie.value ? cookie.value : null);
+        });
+      });
+    })()
+      .catch(() => null)
       .finally(() => {
         this.kw_token_promise = null;
       });
@@ -339,27 +426,26 @@ class kuwo {
       if (token) {
         headers.Cookie = `${name}=${token}`;
       }
-      axios
-        .get(url, { headers })
+      kwRequest(url, headers)
         .then((response) => {
           if (response.data && response.data.success === false) {
-            // token expire, refetch token and start get url
+            // token 失效：丢弃缓存并强制刷新 token 后重试一次。
             this.kw_token_value = null;
-            this.kw_get_token((token2) => {
-              const headers2 = { Secret: h(token2, name) };
-              if (token2) {
-                headers2.Cookie = `${name}=${token2}`;
-              }
-              axios
-                .get(url, { headers: headers2 })
-                .then((res) => {
-                  callback(res);
-                })
-                .catch(() => {
-                  // 必须回调，否则调用方（kw_render_tracks）会一直等待。
-                  callback();
-                });
-            });
+            this.kw_fetch_token(name)
+              .then((token2) => {
+                const headers2 = { Secret: h(token2, name) };
+                if (token2) {
+                  headers2.Cookie = `${name}=${token2}`;
+                }
+                return kwRequest(url, headers2);
+              })
+              .then((res) => {
+                callback(res);
+              })
+              .catch(() => {
+                // 必须回调，否则调用方（kw_render_tracks）会一直等待。
+                callback();
+              });
           } else {
             callback(response);
           }

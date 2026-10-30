@@ -4,8 +4,8 @@
   "description": "One for all free music in China",
   "main": "app/main.js",
   "scripts": {
-    "postinstall": "electron-builder install-app-deps",
-    "start": "electron ./app --enable-logging",
+    "postinstall": "electron-builder install-app-deps && node scripts/ensure-electron.js",
+    "start": "node scripts/ensure-electron.js --strict && electron ./app --enable-logging",
     "test": "node test/unit.test.js",
     "test:e2e": "node test/e2e/verify_all.e2e.js",
     "dev": "NODE_ENV='development' npm run start",
