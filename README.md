@@ -26,7 +26,7 @@ Listen 1 可以搜索和播放来自多个主流音乐网站的歌曲，让你�
 
 访问 github 主页下载安装包安装
 
-网址：https://listen1.github.io/listen1
+网址：https://github.com/jonathon1113/listen1_desktop/releases
 
 ## 生成完整代码
 

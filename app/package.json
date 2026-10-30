@@ -1,6 +1,6 @@
 {
   "name": "listen1",
-  "version": "2.33.0-1.Jonathon",
+  "version": "2.33.0-2",
   "description": "One for all free music in China",
   "main": "main.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/listen1/listen1_desktop.git"
+    "url": "git+https://github.com/jonathon1113/listen1_desktop.git"
   },
   "keywords": [
     "Electron",
@@ -18,9 +18,9 @@
   "author": "Listen 1 <githublisten1@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/listen1/listen1_desktop/issues"
+    "url": "https://github.com/jonathon1113/listen1_desktop/issues"
   },
-  "homepage": "https://github.com/listen1/listen1_desktop#readme",
+  "homepage": "https://github.com/jonathon1113/listen1_desktop#readme",
   "dependencies": {
     "@electron/remote": "^2.1.2",
     "chardet": "^1.4.0",

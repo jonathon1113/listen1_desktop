@@ -1,4 +1,4 @@
-# Listen 1 (Chrome Extension) V2.33.0-1(Jonathon)
+# Listen 1 (Chrome Extension) V2.33.0-2
 
 （最后更新于 2025 年 6 月 17 日）
 
