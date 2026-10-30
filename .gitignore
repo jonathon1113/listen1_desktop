@@ -1,7 +1,6 @@
 node_modules
-app\listen1_chrome_extension\node_modules
+app/listen1_chrome_extension/node_modules
 dist
-test
 yarn.lock
 .vscode
 .DS_Store

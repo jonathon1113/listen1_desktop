@@ -30,9 +30,9 @@ Listen 1 可以搜索和播放来自多个主流音乐网站的歌曲，让你�
 
 ## 生成完整代码
 
-项目中包含了 listen1_chrome_extension 的引用，在 checkout 后需要把引用库初始化
+项目已直接包含 listen1_chrome_extension 的全部源码，checkout 后无需初始化子模块
 
-    git submodule update --init --recursive
+    npm install
 
 ## 运行
 
