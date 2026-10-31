@@ -57,5 +57,138 @@
       "urlFilter": "|*.bilivideo.com/",
       "resourceTypes": ["media"]
     }
+  },
+  {
+    "id": 4,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "referer",
+          "operation": "set",
+          "value": "https://music.163.com/"
+        },
+        {
+          "header": "origin",
+          "operation": "set",
+          "value": "https://music.163.com/"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "|*.music.163.com",
+      "resourceTypes": ["main_frame", "xmlhttprequest"]
+    }
+  },
+  {
+    "id": 5,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "referer",
+          "operation": "set",
+          "value": "https://www.kuwo.cn/"
+        },
+        {
+          "header": "origin",
+          "operation": "set",
+          "value": "https://www.kuwo.cn/"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "|*.kuwo.cn",
+      "resourceTypes": ["main_frame", "xmlhttprequest"]
+    }
+  },
+  {
+    "id": 6,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "referer",
+          "operation": "set",
+          "value": "https://music.migu.cn/v3/music/player/audio?from=migu"
+        },
+        {
+          "header": "origin",
+          "operation": "set",
+          "value": "https://music.migu.cn/v3/music/player/audio?from=migu"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "|*.migu.cn",
+      "resourceTypes": ["main_frame", "xmlhttprequest"]
+    }
+  },
+  {
+    "id": 7,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "user-agent",
+          "operation": "set",
+          "value": "okhttp/3.12.12"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "|jadeite.migu.cn",
+      "resourceTypes": ["main_frame", "xmlhttprequest"]
+    }
+  },
+  {
+    "id": 8,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "referer",
+          "operation": "set",
+          "value": "https://www.taihe.com/"
+        },
+        {
+          "header": "origin",
+          "operation": "set",
+          "value": "https://www.taihe.com/"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "|*.taihe.com",
+      "resourceTypes": ["main_frame", "xmlhttprequest"]
+    }
+  },
+  {
+    "id": 9,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "referer",
+          "operation": "set",
+          "value": "https://music.taihe.com/"
+        },
+        {
+          "header": "origin",
+          "operation": "set",
+          "value": "https://music.taihe.com/"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "|music.91q.com",
+      "resourceTypes": ["main_frame", "xmlhttprequest"]
+    }
   }
 ]
