@@ -17,6 +17,8 @@
     "dist:linuxArm64": "electron-builder --linux --arm64",
     "dist:linuxArmv7l": "electron-builder --linux --armv7l",
     "dist:win": "electron-builder --win",
+    "dist:win32": "electron-builder --win --config build/win32.yml",
+    "dist:win64": "electron-builder --win --config build/win64.yml",
     "dist:win:dir": "electron-builder --win --dir"
   },
   "repository": {

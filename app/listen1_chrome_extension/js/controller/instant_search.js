@@ -62,6 +62,10 @@ angular.module('listenone').controller('InstantSearchController', [
         $scope.loading = false;
         // scroll back to top when finish searching
         document.querySelector('.site-wrapper-innerd').scrollTo({ top: 0 });
+        // 各平台的搜索请求走的是 Promise 回调，不在 angular 的 digest 周期内，
+        // 这里只把结果写进了 scope，界面并不会刷新；必须显式补一次 digest，
+        // 否则搜索结果要等到下一次偶然的 digest 才会显示出来。
+        $scope.$evalAsync(() => {});
       });
     }
 

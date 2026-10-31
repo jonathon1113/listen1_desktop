@@ -27,6 +27,10 @@ angular.module('listenone').controller('PlayListController', [
       ).success((res) => {
         $scope.result = $scope.result.concat(res.result);
         $scope.loading = false;
+        // 各平台的歌单请求走的是 Promise 回调，不在 angular 的 digest 周期内，
+        // 这里只把数据写进了 scope，界面并不会刷新；必须显式补一次 digest，
+        // 否则新追加的歌单要等到下一次偶然的 digest 才会显示出来。
+        $scope.$evalAsync(() => {});
       });
     });
 
@@ -40,6 +44,7 @@ angular.module('listenone').controller('PlayListController', [
       ).success((res) => {
         $scope.result = res.result;
         $scope.loading = false;
+        $scope.$evalAsync(() => {});
       });
 
       if (
@@ -49,6 +54,7 @@ angular.module('listenone').controller('PlayListController', [
         MediaService.getPlaylistFilters($scope.tab).success((res) => {
           $scope.playlistFilters[$scope.tab] = res.recommend;
           $scope.allPlaylistFilters[$scope.tab] = res.all;
+          $scope.$evalAsync(() => {});
         });
       }
     };

@@ -592,6 +592,104 @@ function hack_referer_header(details) {
   details.requestHeaders = headers;
 }
 
+// 酷狗的播放接口要求请求携带「设备指纹」（kg_dfid / kg_mid）。
+// 该指纹只由酷狗官网在首次访问时通过 Set-Cookie 下发，而 Node 的 http/https
+// 请求读不到 Set-Cookie（实测所有酷狗域名都不会下发该 cookie），
+// 因此这里用隐藏窗口走一遍真实 Chromium 网络栈，再从 cookie jar 中取出指纹。
+// 使用独立 partition 有两个好处：
+//   1. 不会被 defaultSession 上的 UA/Referer 改写钩子影响（官网用桌面 UA 才下发指纹）；
+//   2. 指纹能持久化到用户数据目录，换歌、重启都不需要重新注册设备。
+const KUGOU_FINGERPRINT_PARTITION = "persist:kugou-fingerprint";
+const KUGOU_FINGERPRINT_URLS = [
+  "https://www.kugou.com/",
+  "https://m.kugou.com/",
+];
+
+/**
+ * 从 cookie jar 中读取酷狗设备指纹。
+ * @param {electron.Session} ses
+ * @returns {Promise<{dfid: string|null, mid: string|null}>}
+ */
+async function readKugouFingerprint(ses) {
+  let cookies = [];
+  try {
+    cookies = await ses.cookies.get({ url: "https://www.kugou.com/" });
+  } catch (err) {
+    cookies = [];
+  }
+  let dfid = null;
+  let mid = null;
+  cookies.forEach((cookie) => {
+    if (cookie.name === "kg_dfid") dfid = cookie.value;
+    if (cookie.name === "kg_mid") mid = cookie.value;
+  });
+  return { dfid, mid };
+}
+
+let kugouFingerprintPromise = null;
+
+/**
+ * 获取酷狗设备指纹，没有时通过隐藏窗口访问官网注册一个。
+ * @returns {Promise<{dfid: string|null, mid: string|null}>}
+ */
+async function getKugouFingerprint() {
+  const ses = session.fromPartition(KUGOU_FINGERPRINT_PARTITION);
+  // 已经有指纹就直接复用，避免每次播放都去访问官网。
+  const cached = await readKugouFingerprint(ses);
+  if (cached.dfid) {
+    return cached;
+  }
+  if (kugouFingerprintPromise) {
+    return kugouFingerprintPromise;
+  }
+  kugouFingerprintPromise = (async () => {
+    let info = { dfid: null, mid: null };
+    try {
+      await ses.setProxy(proxyConfig);
+    } catch (err) {
+      console.log("[kugou] 设置指纹会话代理失败:", err);
+    }
+    for (const url of KUGOU_FINGERPRINT_URLS) {
+      const win = new BrowserWindow({
+        show: false,
+        width: 1024,
+        height: 768,
+        webPreferences: { partition: KUGOU_FINGERPRINT_PARTITION },
+      });
+      win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+      try {
+        await win.loadURL(url);
+        // 官网通过页面脚本异步下发 cookie，实测 6 秒内即可拿到指纹，
+        // 等待时间过长会拖垮 player_thread 里 15 秒的取址超时。
+        for (let i = 0; i < 12; i += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          info = await readKugouFingerprint(ses);
+          if (info.dfid) break;
+        }
+      } catch (err) {
+        console.log("[kugou] 访问官网获取设备指纹失败:", err);
+      } finally {
+        if (!win.isDestroyed()) win.destroy();
+      }
+      if (info.dfid) break;
+    }
+    return info;
+  })().finally(() => {
+    kugouFingerprintPromise = null;
+  });
+  return kugouFingerprintPromise;
+}
+
+ipcMain.handle("kugou-device-info", async () => {
+  try {
+    const info = await getKugouFingerprint();
+    return { dfid: info.dfid || null, mid: info.mid || null };
+  } catch (err) {
+    console.log("[kugou] 获取设备指纹异常:", err);
+    return { dfid: null, mid: null };
+  }
+});
+
 ipcMain.on("currentLyric", (event, arg) => {
   if (floatingWindow && floatingWindow !== null) {
     if (typeof arg === "string") {
@@ -727,6 +825,9 @@ if (!gotTheLock) {
     createWindow();
     remoteMain.initialize();
     remoteMain.enable(mainWindow.webContents);
+    // 预热酷狗设备指纹：首次注册需要访问官网，提前完成可避免用户首次点播放时
+    // 因等待指纹而超出 player_thread 里 15 秒的取址超时。
+    getKugouFingerprint().catch(() => {});
   });
 }
 

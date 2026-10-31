@@ -1,0 +1,36 @@
+# Windows 32 位（ia32）打包配置
+#
+# electron-builder 的 --config 会「整体替换」package.json 里的 build 字段，
+# 而不是与之合并，所以这里必须写全量配置，否则 productName / icon / nsis 等都会丢失。
+#
+# 与 package.json 的 build 字段保持一致，区别有二：
+#   1. win.target 的 arch 限制为 ia32（32 位）；
+#   2. 去掉了 mac / linux / dmg 段 —— 本配置只用于构建 Windows 包，
+#      而 electron-builder 会校验整个配置，package.json 里写在 mac.target[].category
+#      的分类字段在独立配置文件里会因 schema 校验失败而报错。
+# 修改 package.json 的 build 配置时，请同步更新 build/win32.yml 与 build/win64.yml。
+appId: com.listen1.listen1
+productName: Listen1
+asar: true
+artifactName: "${name}_${version}_${os}_${arch}.${ext}"
+
+nsis:
+  runAfterFinish: false
+  deleteAppDataOnUninstall: true
+  allowToChangeInstallationDirectory: true
+  oneClick: false
+  installerLanguages:
+    - zh_CN
+  language: "2052"
+  perMachine: true
+  createDesktopShortcut: true
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - ia32
+    - target: 7z
+      arch:
+        - ia32
+  icon: build/icon.ico
