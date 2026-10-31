@@ -46,27 +46,6 @@ Listen 1 可以搜索和播放来自多个主流音乐网站的歌曲，让你�
 
     npm run start
 
-## 在 Android 手机上使用（扩展版）
-
-本项目同时提供 Electron 桌面版与 Chrome 扩展版两套形态，扩展版可直接在支持
-Chrome 扩展的 Android 浏览器上运行（如 Kiwi Browser、Yandex Browser、Via 等）。
-
-安装步骤：
-
-1. 把 `app/listen1_chrome_extension` 整个目录复制到手机（数据线、网盘或局域网传输均可）。
-2. 打开浏览器的扩展管理页，开启「开发者模式」。
-3. 选择上一步的目录完成加载（选目录即可，无需打包成 zip）。
-4. 点击工具栏的 Listen 1 图标，播放器界面会在新标签页打开。
-
-已知限制（扩展形态的固有限制，与桌面版不同）：
-
-- 播放由浏览器后台的 service worker 承担。浏览器在后台回收进程后播放会中断，
-  需在系统里关闭对该浏览器的省电/后台清理策略。
-- 播放器界面按桌面宽屏布局设计，手机竖屏下可用空间有限。
-- 跨域请求依赖扩展的 `host_permissions` 与 `declarativeNetRequest` 规则。
-  修改 `manifest.json` 或 `rules_1.json` 后，先跑一次静态校验：
-
-      node scripts/validate_extension.js
 
 ## 生成安装包
 
